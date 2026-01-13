@@ -2,43 +2,42 @@ class ReviewAgent:
     def review(self, test_cases: dict) -> dict:
         reviewed = {}
 
-        reviewed["functional"] = [
-            {
-                "id": "TC_FUNC_01",
-                "title": "Verify product search returns relevant results",
-                "gherkin": [
-                    "Given the user is logged in and on the Amazon home page",
-                    "When the user searches for 'black hoodie'",
-                    "Then the search results page should load successfully",
-                    "And relevant black hoodie products should be displayed",
-                    "And each product should show name, price, image, and rating"
-                ],
-                "priority": "High",
-                "test_type": "Functional",
-                "notes": "Validates core discovery flow and search relevance"
-            }
-        ]
+        # ---------- Functional ----------
+        reviewed["functional"] = test_cases.get("functional", [])
+        reviewed["negative"] = test_cases.get("negative", [])
 
-        reviewed["negative"] = [
-            {
-                "id": "TC_NEG_01",
-                "title": "Verify payment failure with expired debit card",
-                "gherkin": [
-                    "Given the user has added a product to cart and selected a delivery address",
-                    "And the user is on the payment page",
-                    "When the user enters an expired debit card",
-                    "And attempts to place the order",
-                    "Then the payment should be declined",
-                    "And a clear error message indicating card expiration should be shown",
-                    "And no order should be created",
-                    "And the cart contents should remain unchanged"
-                ],
-                "priority": "High",
-                "test_type": "Negative",
-                "notes": "Ensures payment failure does not cause data or order corruption"
-            }
-        ]
-
+        # ---------- API (QA-refined) ----------
         reviewed["api"] = []
+
+        for api_case in test_cases.get("api", []):
+            if "payment" in api_case["title"].lower():
+                reviewed["api"].append({
+                    "id": "TC_API_01",
+                    "title": "Verify payment API rejects expired debit card",
+                    "endpoint": "POST /api/payments/charge",
+                    "assertions": [
+                        "Payment response indicates failure",
+                        "No transaction ID is generated",
+                        "Order status remains PAYMENT_PENDING"
+                    ],
+                    "priority": "High",
+                    "test_type": "API",
+                    "notes": "Prevents invalid payments from creating orders"
+                })
+
+            if "order" in api_case["title"].lower():
+                reviewed["api"].append({
+                    "id": "TC_API_02",
+                    "title": "Verify order is not created when payment fails",
+                    "endpoint": "POST /api/orders",
+                    "assertions": [
+                        "Order creation request is rejected",
+                        "No order ID is generated",
+                        "Cart remains active"
+                    ],
+                    "priority": "High",
+                    "test_type": "API",
+                    "notes": "Ensures order creation is atomic"
+                })
 
         return reviewed
