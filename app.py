@@ -82,13 +82,13 @@ with st.sidebar:
     st.caption("Model selection")
     generator_model = st.selectbox(
         "Generator model",
-        ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-pro"],
+        ["gemini-1.5-flash-002", "gemini-1.5-flash-001", "gemini-1.5-pro-002", "gemini-1.0-pro"],
         index=0,
         help="App auto-falls-back to gemini-pro if 1.5 is unavailable for your key.",
     )
     reviewer_model = st.selectbox(
         "Reviewer model",
-        ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-pro"],
+        ["gemini-1.5-flash-002", "gemini-1.5-flash-001", "gemini-1.5-pro-002", "gemini-1.0-pro"],
         index=0,
         help="App auto-falls-back to gemini-pro if 1.5 is unavailable for your key.",
     )

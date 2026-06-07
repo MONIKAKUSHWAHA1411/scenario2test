@@ -4,14 +4,17 @@ import os
 import requests
 
 
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1/models"
 
-# Tried in order until one succeeds — most capable first, most universal last
+# Explicit versioned IDs — aliases like 'gemini-1.5-flash' and '-latest'
+# do not resolve in the v1 REST API; only numbered versions do.
 MODEL_FALLBACK_CHAIN = [
-    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash-002",
     "gemini-1.5-flash-001",
-    "gemini-1.5-pro-latest",
-    "gemini-pro",
+    "gemini-1.5-pro-002",
+    "gemini-1.5-pro-001",
+    "gemini-1.0-pro-001",
+    "gemini-1.0-pro",
 ]
 
 
@@ -38,47 +41,45 @@ def _resolve_api_key(api_key: str | None) -> str:
 def call_llm(
     system_prompt: str,
     user_prompt: str,
-    model: str = "gemini-1.5-flash-latest",
+    model: str = "gemini-1.5-flash-002",
     temperature: float = 0.0,
     max_tokens: int = 4096,
     api_key: str = None,
 ) -> dict:
     resolved_key = _resolve_api_key(api_key)
 
+    # v1 REST API does not support a system_instruction field.
+    # Prepend the system prompt to the user message instead.
     def _build_body(prompt: str) -> dict:
+        combined = f"{system_prompt}\n\n---\n\n{prompt}"
         return {
-            "system_instruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "contents": [{"role": "user", "parts": [{"text": combined}]}],
             "generationConfig": {
                 "temperature": temperature,
                 "maxOutputTokens": max_tokens,
             },
         }
 
-    def _post(model_name: str, prompt: str) -> requests.Response:
-        url = f"{GEMINI_BASE_URL}/{model_name}:generateContent?key={resolved_key}"
-        return requests.post(url, json=_build_body(prompt), timeout=60)
-
     def _call(prompt: str) -> str:
-        # Try the requested model first, then fall back through the chain
         chain = [model] + [m for m in MODEL_FALLBACK_CHAIN if m != model]
-        last_error = None
+        last_error = "unknown"
         for m in chain:
-            resp = _post(m, prompt)
+            url = f"{GEMINI_BASE_URL}/{m}:generateContent?key={resolved_key}"
+            resp = requests.post(url, json=_build_body(prompt), timeout=60)
             if resp.status_code == 404:
-                last_error = f"Model {m} not available"
+                last_error = f"{m} not found"
                 continue
             if resp.status_code != 200:
                 raise ValueError(f"Gemini API error {resp.status_code}: {resp.text}")
             return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
         raise ValueError(
-            f"No Gemini model available for your API key. "
-            f"Tried: {', '.join(chain)}. Last error: {last_error}"
+            f"No Gemini model available. Tried: {', '.join(chain)}. "
+            f"Last error: {last_error}. "
+            "Please check your API key at aistudio.google.com."
         )
 
     raw = _call(user_prompt)
 
-    # Strip markdown fences if model wrapped the JSON
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):

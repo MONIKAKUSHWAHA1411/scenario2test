@@ -43,7 +43,7 @@ class TestCaseGenerator:
         parsed: dict,
         strategy: dict,
         api_key: str = None,
-        model: str = "gemini-1.5-flash-latest",
+        model: str = "gemini-1.5-flash-002",
     ) -> dict:
         user_prompt = (
             "Generate raw test cases for the following scenario.\n\n"
