@@ -4,7 +4,7 @@ import os
 import requests
 
 
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1/models"
 
 
 def _resolve_api_key(api_key: str | None) -> str:
