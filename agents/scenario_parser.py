@@ -1,6 +1,6 @@
 import json
 
-from models.llm import call_claude
+from models.llm import call_llm
 
 PARSER_SYSTEM_PROMPT = """You are a business analyst specializing in QA requirements extraction.
 Given a raw user scenario, extract structured information and return ONLY a valid JSON object — no markdown fences, no explanation.
@@ -22,13 +22,13 @@ class ScenarioParser:
         self,
         scenario: str,
         api_key: str = None,
-        model: str = "claude-haiku-4-5-20251001",
+        model: str = "gemini-2.0-flash",
     ) -> dict:
         user_prompt = (
             f"Extract structured QA information from this scenario:\n\n{scenario}\n\n"
             "Respond only with the JSON object. Do not include any text outside the JSON."
         )
-        return call_claude(
+        return call_llm(
             system_prompt=PARSER_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             model=model,

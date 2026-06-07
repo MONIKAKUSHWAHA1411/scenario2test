@@ -1,7 +1,10 @@
 import json
 import os
 
-import anthropic
+import requests
+
+
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def _resolve_api_key(api_key: str | None) -> str:
@@ -9,45 +12,51 @@ def _resolve_api_key(api_key: str | None) -> str:
         return api_key
     try:
         import streamlit as st
-        key = st.secrets.get("ANTHROPIC_API_KEY")
+        key = st.secrets.get("GOOGLE_API_KEY")
         if key:
             return key
     except Exception:
         pass
-    key = os.environ.get("ANTHROPIC_API_KEY")
+    key = os.environ.get("GOOGLE_API_KEY")
     if key:
         return key
     raise ValueError(
-        "No Anthropic API key found. Add your key in the sidebar, "
-        "set ANTHROPIC_API_KEY in your environment, "
-        "or add it to .streamlit/secrets.toml."
+        "No Google API key found. Add your free key in the sidebar "
+        "(get one at aistudio.google.com), set GOOGLE_API_KEY in your "
+        "environment, or add it to .streamlit/secrets.toml."
     )
 
 
-def call_claude(
+def call_llm(
     system_prompt: str,
     user_prompt: str,
-    model: str = "claude-haiku-4-5-20251001",
+    model: str = "gemini-2.0-flash",
     temperature: float = 0.0,
     max_tokens: int = 4096,
     api_key: str = None,
 ) -> dict:
     resolved_key = _resolve_api_key(api_key)
-    client = anthropic.Anthropic(api_key=resolved_key)
+    url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={resolved_key}"
+
+    payload = {
+        "system_instruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_tokens,
+        },
+    }
 
     def _call(prompt: str) -> str:
-        response = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system_prompt,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.content[0].text.strip()
+        body = {**payload, "contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        resp = requests.post(url, json=body, timeout=60)
+        if resp.status_code != 200:
+            raise ValueError(f"Gemini API error {resp.status_code}: {resp.text}")
+        return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
 
     raw = _call(user_prompt)
 
-    # Strip markdown fences if model wrapped the JSON anyway
+    # Strip markdown fences if model wrapped the JSON
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -57,7 +66,6 @@ def call_claude(
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        # Self-healing retry: ask the model to fix its own malformed output
         fix_prompt = (
             "The following text is supposed to be valid JSON but has a syntax error. "
             "Return only the corrected JSON with no explanation or markdown fences:\n\n"

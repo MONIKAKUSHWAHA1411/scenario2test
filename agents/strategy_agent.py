@@ -1,6 +1,6 @@
 import json
 
-from models.llm import call_claude
+from models.llm import call_llm
 
 STRATEGIST_SYSTEM_PROMPT = """You are a QA lead with 10 years of experience in risk-based test planning.
 Given a parsed scenario, decide what test coverage is required and return ONLY a valid JSON object — no markdown fences, no explanation.
@@ -26,14 +26,14 @@ class StrategyAgent:
         self,
         parsed_scenario: dict,
         api_key: str = None,
-        model: str = "claude-haiku-4-5-20251001",
+        model: str = "gemini-2.0-flash",
     ) -> dict:
         user_prompt = (
             "Decide the test strategy for this parsed QA scenario:\n\n"
             + json.dumps(parsed_scenario, indent=2)
             + "\n\nRespond only with the JSON object. Do not include any text outside the JSON."
         )
-        return call_claude(
+        return call_llm(
             system_prompt=STRATEGIST_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             model=model,

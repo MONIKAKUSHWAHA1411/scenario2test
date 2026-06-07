@@ -72,40 +72,40 @@ with st.sidebar:
     st.title("Configuration")
 
     sidebar_key = st.text_input(
-        "Anthropic API Key",
+        "Google AI Studio API Key",
         type="password",
-        placeholder="sk-ant-...",
-        help="Your key is used only for this session and never stored.",
+        placeholder="AIza...",
+        help="Free key from aistudio.google.com — never stored.",
     )
 
     st.divider()
     st.caption("Model selection")
     generator_model = st.selectbox(
         "Generator model",
-        ["claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
         index=0,
-        help="Used for Step 3 (raw test generation). Sonnet gives richer cases.",
+        help="Used for Step 3 (raw test generation).",
     )
     reviewer_model = st.selectbox(
         "Reviewer model",
-        ["claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
         index=0,
-        help="Used for Step 4 (QA review). Sonnet is recommended.",
+        help="Used for Step 4 (QA review).",
     )
 
     st.divider()
     st.markdown(
         "**Key lookup order**\n"
         "1. Sidebar input above\n"
-        "2. `ANTHROPIC_API_KEY` env var\n"
+        "2. `GOOGLE_API_KEY` env var\n"
         "3. `.streamlit/secrets.toml`"
     )
 
 # Resolve API key: sidebar > env > st.secrets
 api_key = (
     sidebar_key.strip()
-    or os.environ.get("ANTHROPIC_API_KEY", "")
-    or st.secrets.get("ANTHROPIC_API_KEY", "")
+    or os.environ.get("GOOGLE_API_KEY", "")
+    or st.secrets.get("GOOGLE_API_KEY", "")
 )
 
 # --------------------------------------------------
@@ -167,9 +167,9 @@ if st.button("Generate Test Cases", type="primary"):
 
     if not api_key:
         st.error(
-            "No Anthropic API key found. Add your key in the sidebar, "
-            "set ANTHROPIC_API_KEY in your environment, "
-            "or add it to .streamlit/secrets.toml."
+            "No Google API key found. Add your free key in the sidebar "
+            "(get one at aistudio.google.com), set GOOGLE_API_KEY in your "
+            "environment, or add it to .streamlit/secrets.toml."
         )
         st.stop()
 

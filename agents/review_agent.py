@@ -1,6 +1,6 @@
 import json
 
-from models.llm import call_claude
+from models.llm import call_llm
 
 REVIEWER_SYSTEM_PROMPT = """You are a principal QA engineer with 15 years of experience in test architecture and production incident prevention.
 You are reviewing test cases written by a junior engineer. Your job is to find every gap, every missing assertion, every vague step, and every missing precondition — then fix them.
@@ -64,14 +64,14 @@ class ReviewAgent:
         self,
         test_cases: dict,
         api_key: str = None,
-        model: str = "claude-sonnet-4-6",
+        model: str = "gemini-2.0-flash",
     ) -> dict:
         user_prompt = (
             "Review and refine these raw test cases into production-ready quality:\n\n"
             + json.dumps(test_cases, indent=2)
             + "\n\nRespond only with the JSON object. Do not include any text outside the JSON."
         )
-        return call_claude(
+        return call_llm(
             system_prompt=REVIEWER_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             model=model,

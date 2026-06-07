@@ -1,6 +1,6 @@
 import json
 
-from models.llm import call_claude
+from models.llm import call_llm
 
 GENERATOR_SYSTEM_PROMPT = """You are a junior QA engineer writing your first draft of test cases.
 You are thorough but not yet polished. Your job is to generate raw test cases — the senior QA engineer will refine them later.
@@ -43,7 +43,7 @@ class TestCaseGenerator:
         parsed: dict,
         strategy: dict,
         api_key: str = None,
-        model: str = "claude-sonnet-4-6",
+        model: str = "gemini-2.0-flash",
     ) -> dict:
         user_prompt = (
             "Generate raw test cases for the following scenario.\n\n"
@@ -52,7 +52,7 @@ class TestCaseGenerator:
             f"## Test Strategy\n{json.dumps(strategy, indent=2)}\n\n"
             "Respond only with the JSON object. Do not include any text outside the JSON."
         )
-        return call_claude(
+        return call_llm(
             system_prompt=GENERATOR_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             model=model,
