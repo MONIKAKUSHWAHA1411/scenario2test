@@ -82,15 +82,15 @@ with st.sidebar:
     st.caption("Model selection")
     generator_model = st.selectbox(
         "Generator model",
-        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"],
         index=0,
-        help="Used for Step 3 (raw test generation).",
+        help="Used for Step 3. All options are free tier.",
     )
     reviewer_model = st.selectbox(
         "Reviewer model",
-        ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
+        ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"],
         index=0,
-        help="Used for Step 4 (QA review).",
+        help="Used for Step 4. All options are free tier.",
     )
 
     st.divider()

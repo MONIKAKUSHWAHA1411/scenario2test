@@ -30,7 +30,7 @@ def _resolve_api_key(api_key: str | None) -> str:
 def call_llm(
     system_prompt: str,
     user_prompt: str,
-    model: str = "gemini-2.0-flash",
+    model: str = "gemini-1.5-flash",
     temperature: float = 0.0,
     max_tokens: int = 4096,
     api_key: str = None,

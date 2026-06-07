@@ -22,7 +22,7 @@ class ScenarioParser:
         self,
         scenario: str,
         api_key: str = None,
-        model: str = "gemini-2.0-flash",
+        model: str = "gemini-1.5-flash",
     ) -> dict:
         user_prompt = (
             f"Extract structured QA information from this scenario:\n\n{scenario}\n\n"
