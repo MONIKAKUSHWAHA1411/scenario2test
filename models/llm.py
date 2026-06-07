@@ -38,18 +38,20 @@ def call_llm(
     resolved_key = _resolve_api_key(api_key)
     url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={resolved_key}"
 
-    payload = {
-        "systemInstruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_tokens,
-        },
-    }
+    # v1 REST API does not support a separate systemInstruction field,
+    # so we prepend the system prompt to every user message.
+    def _build_body(prompt: str) -> dict:
+        combined = f"{system_prompt}\n\n---\n\n{prompt}"
+        return {
+            "contents": [{"role": "user", "parts": [{"text": combined}]}],
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_tokens,
+            },
+        }
 
     def _call(prompt: str) -> str:
-        body = {**payload, "contents": [{"role": "user", "parts": [{"text": prompt}]}]}
-        resp = requests.post(url, json=body, timeout=60)
+        resp = requests.post(url, json=_build_body(prompt), timeout=60)
         if resp.status_code != 200:
             raise ValueError(f"Gemini API error {resp.status_code}: {resp.text}")
         return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
