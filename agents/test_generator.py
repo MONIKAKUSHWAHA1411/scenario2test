@@ -1,39 +1,61 @@
-from models.llm import call_llm
+import json
+
+from models.llm import call_claude
+
+GENERATOR_SYSTEM_PROMPT = """You are a junior QA engineer writing your first draft of test cases.
+You are thorough but not yet polished. Your job is to generate raw test cases — the senior QA engineer will refine them later.
+
+Rules:
+- Write steps in plain language. Do NOT use Gherkin syntax yet.
+- Do NOT add preconditions or assertions — those will be added in review.
+- Generate cases for EXACTLY the test_types listed in the strategy. No more, no less.
+- Use the parsed failure_points as mandatory coverage items — every failure point must have at least one test case.
+- More cases is better. Polish comes later.
+
+Return ONLY a valid JSON object with this schema — no markdown fences, no explanation:
+{
+  "functional": [
+    {
+      "id": "TC_FUNC_01",
+      "title": "short descriptive title",
+      "raw_steps": ["step 1", "step 2", "step 3"],
+      "risk": "what could go wrong if this is not tested"
+    }
+  ],
+  "negative": [...same structure, id prefix TC_NEG_],
+  "edge": [...same structure, id prefix TC_EDGE_],
+  "api": [
+    {
+      "id": "TC_API_01",
+      "title": "short descriptive title",
+      "raw_steps": ["step 1", "step 2"],
+      "risk": "what could go wrong"
+    }
+  ]
+}
+Only include keys for test_types present in the strategy. Omit keys for types not in the strategy."""
+
 
 class TestCaseGenerator:
-    def generate(self, scenario, parsed, strategy):
-        """
-        Generates raw (junior-level) test cases including
-        inferred API coverage based on scenario keywords.
-        """
-
-        response = call_llm(scenario)
-
-        # Infer API relevance from scenario
-        scenario_lower = scenario.lower()
-        api_cases = []
-
-        if "payment" in scenario_lower or "checkout" in scenario_lower:
-            api_cases.append({
-                "id": "TC_API_RAW_01",
-                "title": "Payment API call during checkout",
-                "raw_steps": [
-                    "Client sends payment request",
-                    "Backend processes payment"
-                ],
-                "risk": "Payment failure may corrupt order state"
-            })
-
-        if "order" in scenario_lower:
-            api_cases.append({
-                "id": "TC_API_RAW_02",
-                "title": "Order creation after payment",
-                "raw_steps": [
-                    "Order creation API is called",
-                    "Order status is persisted"
-                ],
-                "risk": "Order must not be created without payment"
-            })
-
-        response["api"] = api_cases
-        return response
+    def generate(
+        self,
+        scenario: str,
+        parsed: dict,
+        strategy: dict,
+        api_key: str = None,
+        model: str = "claude-sonnet-4-6",
+    ) -> dict:
+        user_prompt = (
+            "Generate raw test cases for the following scenario.\n\n"
+            f"## Original Scenario\n{scenario}\n\n"
+            f"## Parsed Scenario\n{json.dumps(parsed, indent=2)}\n\n"
+            f"## Test Strategy\n{json.dumps(strategy, indent=2)}\n\n"
+            "Respond only with the JSON object. Do not include any text outside the JSON."
+        )
+        return call_claude(
+            system_prompt=GENERATOR_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            model=model,
+            temperature=0.3,
+            api_key=api_key,
+        )
