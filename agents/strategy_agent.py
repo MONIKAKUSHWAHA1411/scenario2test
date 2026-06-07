@@ -26,7 +26,7 @@ class StrategyAgent:
         self,
         parsed_scenario: dict,
         api_key: str = None,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-1.5-flash-latest",
     ) -> dict:
         user_prompt = (
             "Decide the test strategy for this parsed QA scenario:\n\n"

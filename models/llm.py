@@ -4,7 +4,7 @@ import os
 import requests
 
 
-GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1/models"
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def _resolve_api_key(api_key: str | None) -> str:
@@ -30,7 +30,7 @@ def _resolve_api_key(api_key: str | None) -> str:
 def call_llm(
     system_prompt: str,
     user_prompt: str,
-    model: str = "gemini-1.5-flash",
+    model: str = "gemini-1.5-flash-latest",
     temperature: float = 0.0,
     max_tokens: int = 4096,
     api_key: str = None,
@@ -38,12 +38,10 @@ def call_llm(
     resolved_key = _resolve_api_key(api_key)
     url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={resolved_key}"
 
-    # v1 REST API does not support a separate systemInstruction field,
-    # so we prepend the system prompt to every user message.
     def _build_body(prompt: str) -> dict:
-        combined = f"{system_prompt}\n\n---\n\n{prompt}"
         return {
-            "contents": [{"role": "user", "parts": [{"text": combined}]}],
+            "system_instruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": temperature,
                 "maxOutputTokens": max_tokens,

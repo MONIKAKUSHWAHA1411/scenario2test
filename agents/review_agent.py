@@ -64,7 +64,7 @@ class ReviewAgent:
         self,
         test_cases: dict,
         api_key: str = None,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-1.5-flash-latest",
     ) -> dict:
         user_prompt = (
             "Review and refine these raw test cases into production-ready quality:\n\n"
