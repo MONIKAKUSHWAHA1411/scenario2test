@@ -6,6 +6,14 @@ import requests
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
+# Tried in order until one succeeds — most capable first, most universal last
+MODEL_FALLBACK_CHAIN = [
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash-001",
+    "gemini-1.5-pro-latest",
+    "gemini-pro",
+]
+
 
 def _resolve_api_key(api_key: str | None) -> str:
     if api_key:
@@ -36,7 +44,6 @@ def call_llm(
     api_key: str = None,
 ) -> dict:
     resolved_key = _resolve_api_key(api_key)
-    url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={resolved_key}"
 
     def _build_body(prompt: str) -> dict:
         return {
@@ -48,11 +55,26 @@ def call_llm(
             },
         }
 
+    def _post(model_name: str, prompt: str) -> requests.Response:
+        url = f"{GEMINI_BASE_URL}/{model_name}:generateContent?key={resolved_key}"
+        return requests.post(url, json=_build_body(prompt), timeout=60)
+
     def _call(prompt: str) -> str:
-        resp = requests.post(url, json=_build_body(prompt), timeout=60)
-        if resp.status_code != 200:
-            raise ValueError(f"Gemini API error {resp.status_code}: {resp.text}")
-        return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        # Try the requested model first, then fall back through the chain
+        chain = [model] + [m for m in MODEL_FALLBACK_CHAIN if m != model]
+        last_error = None
+        for m in chain:
+            resp = _post(m, prompt)
+            if resp.status_code == 404:
+                last_error = f"Model {m} not available"
+                continue
+            if resp.status_code != 200:
+                raise ValueError(f"Gemini API error {resp.status_code}: {resp.text}")
+            return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        raise ValueError(
+            f"No Gemini model available for your API key. "
+            f"Tried: {', '.join(chain)}. Last error: {last_error}"
+        )
 
     raw = _call(user_prompt)
 
