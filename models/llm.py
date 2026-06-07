@@ -39,7 +39,7 @@ def call_llm(
     url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={resolved_key}"
 
     payload = {
-        "system_instruction": {"parts": [{"text": system_prompt}]},
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
         "generationConfig": {
             "temperature": temperature,
